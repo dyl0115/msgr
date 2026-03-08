@@ -21,4 +21,6 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(sendCmd)
 	rootCmd.AddCommand(listenCmd)
+	rootCmd.AddCommand(installCmd)
+	rootCmd.AddCommand(uninstallCmd)
 }

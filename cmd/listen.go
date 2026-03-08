@@ -16,20 +16,20 @@ var listenCmd = &cobra.Command{
 	Use:   "listen",
 	Short: "메시지 수신 대기 (팝업으로 알림)",
 	Run: func(cmd *cobra.Command, args []string) {
+		// 콘솔 창 숨기기
+		hideConsole()
+
 		addr := fmt.Sprintf(":%s", listenPort)
 		ln, err := net.Listen("tcp", addr)
 		if err != nil {
-			fmt.Printf("리스닝 실패: %v\n", err)
+			showPopup("msgr 오류", fmt.Sprintf("리스닝 실패: %v", err))
 			return
 		}
 		defer ln.Close()
 
-		fmt.Printf("메시지 대기 중... (포트 %s)\n", listenPort)
-
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				fmt.Printf("연결 오류: %v\n", err)
 				continue
 			}
 			go handleMessage(conn)
@@ -37,17 +37,28 @@ var listenCmd = &cobra.Command{
 	},
 }
 
+func hideConsole() {
+	kernel32 := syscall.NewLazyDLL("kernel32.dll")
+	user32 := syscall.NewLazyDLL("user32.dll")
+
+	getConsoleWindow := kernel32.NewProc("GetConsoleWindow")
+	showWindow := user32.NewProc("ShowWindow")
+
+	hwnd, _, _ := getConsoleWindow.Call()
+	if hwnd != 0 {
+		showWindow.Call(hwnd, 0) // SW_HIDE = 0
+	}
+}
+
 func handleMessage(conn net.Conn) {
 	defer conn.Close()
 
 	buf, err := io.ReadAll(conn)
 	if err != nil {
-		fmt.Printf("수신 오류: %v\n", err)
 		return
 	}
 
 	message := string(buf)
-	fmt.Printf("메시지 수신: %s\n", message)
 	showPopup("📨 새 메시지", message)
 }
 
